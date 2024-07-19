@@ -41,4 +41,4 @@ owner:{
 
 // videoSchema.plugin
 
-export const Video= mongoose.connect("Video",videoSchema)
+export const Video= mongoose.model("Video",videoSchema);
