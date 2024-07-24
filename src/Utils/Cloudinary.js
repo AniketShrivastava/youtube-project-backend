@@ -17,7 +17,6 @@ import fs from "fs"
           const response = await cloudinary.uploader.upload(localFilePath,{
                 resource_type:"auto"
             })
-            console.log(response)
             //File has uploaded successfull
            
             console.log("file is uploaded successfully",response.url);
