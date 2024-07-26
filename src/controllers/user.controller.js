@@ -14,7 +14,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
         const user = await User.findById(userId);
         const accessToken = user.generateAccessToken()
         const refreshToken = user.generateRefreshToken()
-        console.log(accessToken, refreshToken)
+        // console.log(accessToken, refreshToken)
 
         user.refreshToken = refreshToken
         await user.save({ ValidateBeforeSave: false })
@@ -29,7 +29,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
 const userRegister = asyncHandler(async (req, res) => {
 
     const { username, email, fullName, password } = req.body
-    console.log("email:", email)
+    // console.log("email:", email)
 
     if (
         [fullName, username, email, password].some((field) => field?.trim() === "")
@@ -127,7 +127,7 @@ const loginUser = asyncHandler(async (req, res) => {
 })
 
 const logoutUser = asyncHandler(async (req, res) => {
-    console.log(req._id)
+    // console.log(req._id)
     await User.findByIdAndUpdate(
 
         req.user._id,
@@ -221,7 +221,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, req.user, "User fetch successfully"))
 })
 
-const updateAcssountDetails = asyncHandler(async (req, res) => {
+const updateAccountDetails = asyncHandler(async (req, res) => {
     const { fullName, email } = req.body;
 
     if (!fullName || !email) {
@@ -309,12 +309,11 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     const channel = await User.aggregate([
         {
             $match: {
-                username: username?.toLowerCase();
+                username: username?.toLowerCase()
             }
-
         },
         {
-            //Find all Suscribers
+            // Find all Subscribers
             $lookup: {
                 from: "subscriptions",
                 localField: "_id",
@@ -332,11 +331,13 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         },
         {
             $addFields: {
+                subscribers: { $ifNull: ["$subscribers", []] },
+                subscribedTo: { $ifNull: ["$subscribedTo", []] },
                 subscribersCount: {
                     $size: "$subscribers"
                 },
-                channelsSubscribeToCount: {
-                    $size: "subscribedTo"
+                channelsSubscribedToCount: {
+                    $size: "$subscribedTo"
                 },
                 isSubscribed: {
                     $cond: {
@@ -352,26 +353,25 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
                 fullName: 1,
                 username: 1,
                 subscribersCount: 1,
-                channelsSubscribeToCount: 1,
+                channelsSubscribedToCount: 1,
                 isSubscribed: 1,
                 avatar: 1,
                 coverImage: 1,
                 email: 1
             }
         }
-    ])
-    if (channel?.length) {
-        throw new ApiError(404, "channel does not exits")
+    ]);
+
+    if (!channel?.length) {
+        throw new ApiError(404, "channel does not exist");
     }
 
     return res
         .status(200)
         .json(
-            new ApiResponse(200, channel[0],
-                "User channel fetch Successfully"
-            )
-        )
-})
+            new ApiResponse(200, channel[0], "User channel fetched successfully")
+        );
+});
 
 const getWatchHistory = asyncHandler(async (req, res) => {
     const user = await User.aggregate([
@@ -399,35 +399,39 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                                     username: 1,
                                     avatar: 1
                                 }
-                            }
-                            ]
-
-
+                            }]
                         }
                     },
                     {
-                     $addFields:{
-                     owner:{
-                      $first:"$owner"
-                     }
-                     }
+                        $addFields: {
+                            owner: {
+                                $first: "$owner"
+                            }
+                        }
                     }
-                    
-                    ]
+                ]
+            }
+        },
+        {
+            $addFields: {
+                watchHistory: { $ifNull: ["$watchHistory", []] }
             }
         }
-    ])
+    ]);
 
-    return res.status(200)
-    .json(
-new ApiError(
-  200,
-  user[0].watchHistory,
-  "Watch history fetched Successfully"
-  
-)
-    )
-})
+    // if (!user.length) {
+    //     throw new ApiError(404, "User not found");
+    // }
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            user[0].watchHistory,
+            "Watch history fetched successfully"
+        )
+    );
+});
+
 
 
 export {
@@ -437,7 +441,7 @@ export {
     refreshAccessToken,
     changeCurrentPassword,
     getCurrentUser,
-    updateAcssountDetails,
+    updateAccountDetails,
     updateUserAvatar,
     updateUserCoverImage,
     getUserChannelProfile,
