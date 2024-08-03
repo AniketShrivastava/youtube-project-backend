@@ -30,6 +30,27 @@ const createPlaylist = asyncHandler(async (req, res) => {
     }
 });
 
+const getUserPlaylists = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+
+    // Validate the userId
+    if (!isValidObjectId(userId)) {
+        throw new ApiError(400, 'Invalid user ID');
+    }
+
+    try {
+        // Fetch playlists for the given user ID
+        const playlists = await Playlist.find({ owner: userId });
+
+        if (!playlists.length) {
+            return res.status(404).json(new ApiResponse(404, 'No playlists found for this user'));
+        }
+
+        res.status(200).json(new ApiResponse(200, 'User playlists retrieved successfully', playlists));
+    } catch (error) {
+        res.status(500).json(new ApiResponse(500, 'Internal Server Error'));
+    }
+});
 
 
 export {
