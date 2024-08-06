@@ -32,10 +32,10 @@ const createPlaylist = asyncHandler(async (req, res) => {
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
     const { userId } = req.params;
-
+    
     // Validate the userId
     if (!isValidObjectId(userId)) {
-        throw new ApiError(400, 'Invalid user ID');
+        return res.status(400).json(new ApiResponse(400, 'Invalid user ID'));
     }
 
     try {
@@ -43,17 +43,71 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
         const playlists = await Playlist.find({ owner: userId });
 
         if (!playlists.length) {
-            return res.status(404).json(new ApiResponse(404, 'No playlists found for this user'));
+            return res.status(404).json(new ApiResponse(404, 'No playlists found for this user', []));
         }
 
-        res.status(200).json(new ApiResponse(200, 'User playlists retrieved successfully', playlists));
+        res.status(200).json(new ApiResponse(200,playlists, 'User playlists retrieved successfully'));
     } catch (error) {
         res.status(500).json(new ApiResponse(500, 'Internal Server Error'));
     }
 });
 
+const getPlaylistById = async (req, res, next) => {
+    const { playlistId } = req.params;
+
+    console.log(`Request received for playlistId: ${playlistId}`); // Debugging line
+
+    try {
+        // Validate the playlist ID
+        if (!playlistId) {
+            return res.status(400).json(new ApiResponse(400, null, 'Playlist ID is required'));
+        }
+
+        // Fetch the playlist by ID and populate the videos
+        const playlists = await Playlist.findById(playlistId);
+
+        console.log(`Fetched playlist: ${playlists}`); // Debugging line
+
+        // Check if the playlist exists
+        if (!playlists) {
+            return res.status(404).json(new ApiResponse(404, null, 'Playlist not found'));
+        }
+
+        // Return the successful response
+        res.status(200).json(new ApiResponse(200, playlists, 'Playlist fetched successfully'));
+    } catch (error) {
+        console.error(`Error fetching playlist: ${error}`); // Debugging line
+        next(error);
+    }
+};
+// Add a video to a playlist
+const addVideoToPlaylist = asyncHandler(async (req, res) => {
+    const { playlistId, videoId } = req.params;
+
+    if (!isValidObjectId(playlistId) || !isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid playlist or video ID");
+    }
+
+    const playlist = await Playlist.findById(playlistId);
+
+    if (!playlist) {
+        throw new ApiError(404, "Playlist not found");
+    }
+
+    if (playlist.videos.includes(videoId)) {
+        throw new ApiError(400, "Video already in playlist");
+    }
+
+    playlist.videos.push(videoId);
+    await playlist.save();
+
+    res.status(200).json(new ApiResponse(200, "Video added to playlist successfully", playlist));
+});
+
 
 export {
     createPlaylist,
-    getUserPlaylists
+    getUserPlaylists,
+    getPlaylistById,
+    addVideoToPlaylist
 };
