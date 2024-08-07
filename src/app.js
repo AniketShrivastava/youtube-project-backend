@@ -20,11 +20,13 @@ import UserRouter from"./routes/user.routes.js"
 import VideoRouter from "./routes/video.routes.js"
 import  PlaylistRouter  from "./routes/playlist.routes.js";
 import CommentRouter from "./routes/comment.routes.js"
+import LikeRouter from "./routes/like.routes.js"
 
 app.use("/api/v1/users", UserRouter)
 app.use("/api/v1/videos", VideoRouter)
 app.use("/api/v1/playlist",PlaylistRouter)
 app.use("/api/v1/video",CommentRouter)
+app.use("/api/v1/like",LikeRouter)
 
 
 
